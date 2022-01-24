@@ -1,0 +1,70 @@
+# Tasks to configure duo in Unix / Linux
+
+
+- name: Configure Duo Keys and Api host
+  duo_handler:
+    ikey: "{{ duokeys.ikey }}"
+    skey: "{{ duokeys.skey }}"
+    host: "{{ duokeys.host }}"
+    log: true
+    backup: true
+    state: present
+  when: (duofacts.message.ikey == "" and duofacts.message.skey == "") or duoforceinstall==true or duofacts.message.ikey == "None" or duofacts.message.skey == "None"
+
+- name: Configure Duo parameters
+  duo_handler:
+    failmode: "safe"
+    gecos_username_pos: "6"
+    gecos_delim: "/"
+    https_timeout: "10"
+    log: true
+    state: present
+
+- name: Reload DUO Facts
+  duo_handler:
+    state: report
+  register: duofacts
+
+- name: Duo Facts
+  ansible.builtin.debug:
+    msg: "{{ duofacts }}"
+
+- name: Configure to process all groups (*))
+  duo_handler:
+    group: "*"
+    first: true
+    log: true
+    state: present
+  
+- name: Group whitelst must be there
+  ansible.builtin.group:
+    name: "whitelst"
+    state: present
+
+- name: Configure to except the group whitelst
+  duo_handler:
+    group: "!whitelst"
+    log: true
+    state: present
+
+- name: Group functids must be there
+  ansible.builtin.group:
+    name: "functids"
+    state: present
+- name: Configure to except the group functids
+  duo_handler:
+    group: "!functids"
+    log: true
+    state: present
+
+# Goups not used anymore, shoud not be there
+- name: Group whitelst must be there
+  ansible.builtin.group:
+    name: "WssNoDuo"
+    state: absent
+
+- name: Configure to except the group whitelst
+  duo_handler:
+    group: "!WssNoDuo"
+    log: true
+    state: absent

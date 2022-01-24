@@ -1,0 +1,31 @@
+- name: Install Prerequisites 
+  become: yes
+  yum:
+    name:
+    - openssl-devel
+    - pam-devel
+    - gcc
+    - selinux-policy-devel
+    - bzip2
+    state: latest
+
+- name: Create DUO etc dir 
+  ansible.builtin.file:
+    path: /etc/duo
+    state: directory
+    owner: root
+    group: root
+    mode: '1755'
+
+- name: Unarchive a file that is already on the remote machine
+  ansible.builtin.unarchive:
+    src: "/tmp/duo/{{ duo.source_targzfile }}"
+    dest: "/tmp/duo"
+    remote_src: yes
+  
+- name: Compile source
+  ansible.builtin.shell:
+    cmd: ./configure --with-pam --prefix=/usr && make && sudo make install
+    chdir: "/tmp/duo/{{ duo.source_dir }}"
+    
+  

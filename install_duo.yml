@@ -1,0 +1,63 @@
+---
+# @uthor: Luciano Báez
+#         lucianobaez@kyndryl.com
+
+# Playbook to install and configure DUO
+
+- hosts: all
+  become: true 
+  #collections:
+  #  - gbse.vcscollection  
+  pre_tasks:
+  - include_vars: vars/variables.yml
+  tasks :
+    # Start Defining facts for the playbooks
+    - name: Define empty key facts
+      ansible.builtin.set_fact :
+        duokeys: 
+          ikey: ""
+          skey: ""
+          apihost: ""
+      when: DUOIKEY is not defined or DUOSKEY is not defined or DUOAPIHOST is not defined 
+
+    - name: Define key facts
+      ansible.builtin.set_fact :
+        duokeys: 
+          ikey: "{{ DUOIKEY }}"
+          skey: "{{ DUOSKEY }}"
+          host: "{{ DUOAPIHOST }}"
+      when: DUOIKEY is defined and DUOSKEY is defined and DUOAPIHOST is defined 
+
+    - name: Define force install as false
+      ansible.builtin.set_fact :
+        duoforceinstall: false
+      when: DUOFORCE is not defined
+
+    - name: Define force install 
+      ansible.builtin.set_fact :
+        duoforceinstall: "{{ DUOFORCE }}"
+      when: DUOFORCE is defined
+
+    # End Defining facts for the playbooks    
+
+    # Playbook for RHEL
+    - name: DUO for RHEL
+      import_tasks: playbooks/duo_rhel.yml
+      when: ansible_distribution == "RedHat"
+
+    # Playbook for Zlinux (Suse on S390)
+    - name: DUO for SLES on s390 (ZLinux)
+      import_tasks: playbooks/duo_sles.yml
+      when: ansible_distribution == "SLES" and  ansible_architecture == "s390x"
+
+    # Playbook for AIX
+    - name: DUO for AIX
+      import_tasks: playbooks/duo_aix.yml
+      when: ansible_distribution == "AIX"
+
+    # Playbook for Windows
+    - name: DUO for Windows
+      import_tasks: playbooks/duo_windows.yml
+      when: ansible_distribution == "Windows"
+      #ansible_facts['os_family'] == "Windows"
+

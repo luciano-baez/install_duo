@@ -1,0 +1,104 @@
+# Configure PAM file system-auth for redhat 7 and 8
+
+- name: Configure line "auth  required pam_env.so" at system-auth
+  pam_handler:
+    service_name: system-auth
+    backup: true
+    log: true
+    first: true
+    module_type: auth
+    control_flags: required
+    module_path: pam_env.so
+    module_options: ""
+    state: present
+
+- name: Configure line "auth  sufficient pam_unix.so nullok try_first_pass" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+
+    reference_module_type: auth
+    reference_control_flags: required
+    reference_module_path: pam_env.so
+
+    module_type: auth
+    control_flags: sufficient
+    module_path: pam_unix.so
+    module_options: "nullok try_first_pass"
+    
+    state: presentafter
+
+- name: Configure line "auth  requisite pam_unix.so nullok try_first_pass" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+
+    reference_module_type: auth
+    reference_control_flags: required
+    reference_module_path: pam_env.so
+
+    module_type: auth
+    control_flags: requisite
+    module_path: pam_unix.so
+    module_options: "nullok try_first_pass"
+    
+    state: presentafter
+
+#-------
+- name: Comment line "auth  sufficient pam_unix.so nullok try_first_pass" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+    module_type: auth
+    control_flags: sufficient
+    module_path: pam_unix.so
+    state: comment
+#-------
+
+- name: Configure line "auth  sufficient pam_duo.so" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+
+    reference_module_type: auth
+    reference_control_flags: requisite
+    reference_module_path: pam_unix.so
+
+    module_type: auth
+    control_flags: sufficient
+    module_path: pam_duo.so
+    module_options: ""
+    
+    state: presentafter
+
+- name: Configure line "auth  requisite pam_succeed_if.so uid >= 1000 quiet_success" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+
+    reference_module_type: auth
+    reference_control_flags: sufficient
+    reference_module_path: pam_duo.so
+
+    module_type: auth
+    control_flags: requisite
+    module_path: pam_succeed_if.so
+    module_options: "uid >= 1000 quiet_success"
+    
+    state: presentafter
+
+- name: Configure line "auth  required pam_deny.so" at system-auth after previous line
+  pam_handler:
+    service_name: system-auth
+    log: true
+
+    reference_module_type: auth
+    reference_control_flags: requisite
+    reference_module_path: pam_succeed_if.so
+
+    module_type: auth
+    control_flags: required
+    module_path: pam_deny.so
+    module_options: ""
+    
+    state: presentafter

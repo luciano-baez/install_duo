@@ -1,0 +1,73 @@
+# .____    .__    tasks file for install_duo for RHEL                
+# |    |   |__| ____  __ _____  ___ 
+# |    |   |  |/    \|  |  \  \/  / Flavor REDHAT -  
+# |    |___|  |   |  \  |  />    <   Red Hat Enterprise Linux Server
+# |_______ \__|___|  /____//__/\_ \ 
+#         \/       \/            \/ 
+
+- name: Load DUO Facts
+  duo_handler:
+    state: report
+  register: duofacts
+
+- name: Load pam Facts
+  pam_handler:
+    state: report
+  register: pamfacts
+
+- name: Duo Facts
+  ansible.builtin.debug:
+    msg: "{{ duofacts }}"
+
+- name: DUO isntalled
+  ansible.builtin.debug:
+    msg: "{{ duofacts.message.installed }}"
+
+- name: Print duo keys
+  ansible.builtin.debug:
+    msg: "{{ duokeys }}"
+
+- name: Create DUO temp dir not installed
+  ansible.builtin.file:
+    path: /tmp/duo
+    state: directory
+    owner: root
+    group: root
+    mode: '1775'
+
+- name: Copy installer if DUO not installed
+  ansible.builtin.copy:
+    src: "{{ duo.source_targzfile }}"
+    dest: "/tmp/duo/{{ duo.source_targzfile }}"
+    owner: root
+    group: root
+    mode: '0666'
+  when: duofacts.message.installed ==false
+
+- name: Install DUO for RHEL
+  import_tasks: playbooks/duo_rhel_install.yml
+  when: duofacts.message.installed ==false
+
+
+# Tasks to configure duo in Unix / Linux
+- name: DUO for RHEL
+  import_tasks: playbooks/duo_configureduo-xnix.yml
+
+# group only for Redhat
+- name: Configure to except the group functids
+  duo_handler:
+    group: "!root"
+    state: present
+
+#- name: Inpect PAM facts
+#  ansible.builtin.debug:
+#    msg : "{{ pamfacts }}"
+
+# Configure pam
+- name: Configure PAM system-auth for RHEL 7 & 8
+  import_tasks: playbooks/duo_rhel7-8_pam_system-auth.yml
+  when: pamfacts.message.os.majorversion == 7 or pamfacts.message.os.majorversion == 8
+
+- name: Configure PAM sshd for RHEL 7 & 8
+  import_tasks: playbooks/duo_rhel7-8_pam_sshd.yml
+  when: pamfacts.message.os.majorversion == 7 or pamfacts.message.os.majorversion == 8
